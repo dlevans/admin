@@ -159,7 +159,13 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     throw new ApiError(res.status, message);
   }
   if (res.status === 204) return undefined as T;
-  return res.json() as Promise<T>;
+  const text = await res.text();
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    // Usually means BASE points at the web host instead of the API (see README, "Hosting elsewhere").
+    throw new ApiError(res.status, `The server at ${BASE} didn't reply like the VolunteerKC API. Check VITE_API_BASE.`);
+  }
 }
 
 export const api = {

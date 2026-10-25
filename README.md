@@ -25,6 +25,16 @@ volunteers. To use a local API, create `.env.local` with `VITE_API_PROXY=http://
 npm run build
 ```
 
+### Hosting elsewhere (e.g. Render static site)
+
+1. In the Render service's **Environment**, add `VITE_API_BASE` = `https://www.chuckbrandt.com/VKC`
+   (it's baked in at build time, so redeploy afterwards). Build command `npm install && npm run build`,
+   publish directory `dist`.
+2. In the API's `.env` on cPanel add `CORS_ORIGINS=https://admin-8uw5.onrender.com` (comma-separate
+   several origins, no trailing slash), then `touch ~/vkc_api/tmp/restart.txt`.
+
+### Same site as the API (cPanel)
+
 Upload the contents of `dist/` to a folder on the same site as the API, e.g. `public_html/VKC-admin/`,
 then open `https://www.chuckbrandt.com/VKC-admin/`. Paths are relative and routing is hash-based
 (`#/texts`), so no rewrite rules are needed. Because it's on the same domain as the API, no CORS
