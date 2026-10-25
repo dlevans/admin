@@ -115,6 +115,8 @@ button, .button {
 button:hover:not(:disabled), .button:hover { border-color: var(--primary); }
 button:disabled { opacity: .5; cursor: not-allowed; }
 button.primary, .button.primary { background: var(--primary); color: var(--on-primary); border-color: var(--primary); font-weight: 600; }
+/* A faded fill still reads as "on", so disabled filled buttons drop back to the plain look. */
+button.primary:disabled, button.danger:disabled { background: var(--surface); color: var(--text); border-color: var(--line); }
 button.link { border: 0; background: none; padding: 0; color: var(--primary); text-decoration: underline; }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, .button:focus-visible {
   outline: 2px solid var(--primary);
