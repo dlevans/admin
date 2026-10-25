@@ -134,6 +134,11 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
   if (body !== undefined) headers["Content-Type"] = "application/json";
+  // The API host's firewall blocks PUT and DELETE outright; the API reads this header instead.
+  if (method === "PUT" || method === "DELETE") {
+    headers["X-HTTP-Method-Override"] = method;
+    method = "POST";
+  }
 
   let res: Response;
   try {
