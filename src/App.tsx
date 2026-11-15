@@ -1,5 +1,6 @@
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "./auth";
+import ApiTester from "./pages/ApiTester";
 import Dashboard from "./pages/Dashboard";
 import Events from "./pages/Events";
 import History from "./pages/History";
@@ -15,6 +16,7 @@ const NAV = [
   { to: "/events", label: "Events" },
   { to: "/volunteers", label: "Volunteers" },
   { to: "/history", label: "History" },
+  { to: "/api", label: "API tester" },
 ];
 
 export default function App() {
@@ -52,6 +54,7 @@ export default function App() {
           <Route path="/events" element={<Events />} />
           <Route path="/volunteers" element={<Volunteers />} />
           <Route path="/history" element={<History />} />
+          <Route path="/api" element={<ApiTester />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

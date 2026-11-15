@@ -1,6 +1,6 @@
 // Thin client for the VolunteerKC API (FastAPI, see /VKC/docs).
 
-const BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? "/VKC";
+export const BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? "/VKC";
 const TOKEN_KEY = "vkc-admin-token";
 
 export interface Volunteer {
@@ -171,6 +171,37 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     // Usually means BASE points at the web host instead of the API (see README, "Hosting elsewhere").
     throw new ApiError(res.status, `The server at ${BASE} didn't reply like the VolunteerKC API. Check VITE_API_BASE.`);
   }
+}
+
+export interface RawResponse {
+  status: number;
+  statusText: string;
+  ms: number;
+  body: string;
+}
+
+/**
+ * Send any request and return the raw reply, error statuses included. Used by the API tester.
+ * Unlike request(), a 401 here doesn't sign the admin out (testing a bad login shouldn't end the session).
+ */
+export async function rawRequest(method: string, path: string, body?: string): Promise<RawResponse> {
+  const headers: Record<string, string> = {};
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (body) headers["Content-Type"] = "application/json";
+  if (method === "PUT" || method === "PATCH" || method === "DELETE") {
+    headers["X-HTTP-Method-Override"] = method;
+    method = "POST";
+  }
+  const started = performance.now();
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}${path}`, { method, headers, body: body || undefined });
+  } catch {
+    throw new ApiError(0, "Can't reach the server. Check your connection.");
+  }
+  const text = await res.text();
+  return { status: res.status, statusText: res.statusText, ms: Math.round(performance.now() - started), body: text };
 }
 
 export const api = {
