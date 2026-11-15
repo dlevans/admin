@@ -1,10 +1,11 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import { useAuth } from "../auth";
 
 export default function Login() {
   const { login } = useAuth();
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  // Uncontrolled on purpose: a controlled input makes React mirror the password into the DOM value attribute.
+  const passwordRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -13,7 +14,7 @@ export default function Login() {
     setBusy(true);
     setError(null);
     try {
-      await login(email.trim(), password);
+      await login(email.trim(), passwordRef.current?.value ?? "");
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -36,8 +37,7 @@ export default function Login() {
           <input
             type="password"
             autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            ref={passwordRef}
             required
           />
         </label>
