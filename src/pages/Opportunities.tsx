@@ -93,6 +93,11 @@ function OpportunityRow({
         </div>
         <span className="badge">{plural(opp.signup_count, "signup")}</span>
         {opp.checkin_count > 0 && <span className="badge sent">{opp.checkin_count} checked in</span>}
+        {!!opp.user_modified_count && (
+          <span className="badge user-mod" title="Volunteers who changed their own times or hours in the app">
+            {opp.user_modified_count} user updated
+          </span>
+        )}
       </button>
       {open && (
         <div className="event-body">
@@ -115,6 +120,7 @@ function Roster({ opp, onChanged }: { opp: Opportunity; onChanged: () => void })
   const navigate = useNavigate();
   const { data, setData, error, loading } = useLoad(() => api.opportunityEvents(opp.id), [opp.id]);
   const [editing, setEditing] = useState<VolunteerEvent | null>(null);
+  const [history, setHistory] = useState<VolunteerEvent | null>(null);
   const [adding, setAdding] = useState(false);
 
   const saved = (ev: VolunteerEvent) => {
@@ -154,6 +160,17 @@ function Roster({ opp, onChanged }: { opp: Opportunity; onChanged: () => void })
                 <td>
                   {ev.name}
                   {ev.walk_in && <span className="muted small"> · walk-in</span>}
+                  {ev.user_modified && (
+                    <>
+                      {" "}
+                      <span
+                        className="badge user-mod"
+                        title={`Changed their own times/hours in the app${ev.user_modified_at ? ` (last ${fmtStamp(ev.user_modified_at)})` : ""}`}
+                      >
+                        user updated
+                      </span>
+                    </>
+                  )}
                 </td>
                 <td className="hide-sm">{ev.phone || "—"}</td>
                 <td className="hide-sm muted small">{ev.walk_in ? "—" : fmtStamp(ev.signed_up_at)}</td>
@@ -164,6 +181,9 @@ function Roster({ opp, onChanged }: { opp: Opportunity; onChanged: () => void })
                   <div className="row">
                     <button className="link" onClick={() => setEditing(ev)}>
                       Edit
+                    </button>
+                    <button className="link" onClick={() => setHistory(ev)}>
+                      History
                     </button>
                     <button className="link" onClick={() => textOne(ev.volunteer_id)} disabled={!ev.phone}>
                       Text
@@ -179,6 +199,7 @@ function Roster({ opp, onChanged }: { opp: Opportunity; onChanged: () => void })
         <button onClick={() => setAdding(true)}>Record someone who didn't use the app</button>
       </div>
 
+      {history && <ChangeHistory opp={opp} ev={history} onClose={() => setHistory(null)} />}
       {editing && <EditTimes opp={opp} ev={editing} onClose={() => setEditing(null)} onSaved={saved} />}
       {adding && (
         <AddVolunteer
@@ -206,6 +227,13 @@ function EditTimes({
 }) {
   return (
     <Modal title={`${ev.name} · ${opp.title}`} onClose={onClose}>
+      {ev.user_modified && (
+        <div className="alert warn small" style={{ marginTop: 0 }}>
+          {ev.name} changed these times or hours in the app
+          {ev.user_modified_at ? ` (last on ${fmtStamp(ev.user_modified_at)})` : ""}. Your changes are logged too; see
+          History on the roster.
+        </div>
+      )}
       <TimesForm
         opp={opp}
         initial={ev}
@@ -213,6 +241,51 @@ function EditTimes({
         onSubmit={(body) => api.updateVolunteerEvent(opp.id, ev.volunteer_id, body)}
         onSaved={onSaved}
       />
+    </Modal>
+  );
+}
+
+/** Every logged change to someone's arrival, departure and hours, newest first. */
+function ChangeHistory({ opp, ev, onClose }: { opp: Opportunity; ev: VolunteerEvent; onClose: () => void }) {
+  const { data, error, loading } = useLoad(() => api.eventChanges(opp.id, ev.volunteer_id), [opp.id, ev.volunteer_id]);
+  const stamp = (iso: string | null) => (iso ? fmtStamp(iso) : "—");
+  const diff = (label: string, before: string, after: string) =>
+    before === after ? null : (
+      <div className="small">
+        <span className="muted">{label}:</span> {before} → <strong>{after}</strong>
+      </div>
+    );
+
+  return (
+    <Modal title={`History · ${ev.name}`} onClose={onClose}>
+      <p className="muted small" style={{ marginTop: 0 }}>
+        {opp.title} · {fmtStamp(opp.start_at)}
+      </p>
+      {loading && !data && <p className="muted">Loading…</p>}
+      {error && <div className="alert error">{error}</div>}
+      {data?.length === 0 && (
+        <p className="muted">No changes recorded. Changes made before this log existed aren't shown.</p>
+      )}
+      {!!data?.length && (
+        <ul className="change-list">
+          {[...data].reverse().map((c, i) => (
+            <li key={i}>
+              <div className="row between wrap">
+                <span>
+                  <strong>{c.changed_by_name ?? "Deleted account"}</strong>{" "}
+                  <span className={`badge ${c.changed_by_role === "volunteer" ? "user-mod" : ""}`}>
+                    {c.changed_by_role === "volunteer" ? "volunteer" : "admin"}
+                  </span>
+                </span>
+                <span className="muted small">{fmtStamp(c.changed_at)}</span>
+              </div>
+              {diff("Arrived", stamp(c.old_checked_in_at), stamp(c.new_checked_in_at))}
+              {diff("Left", stamp(c.old_checked_out_at), stamp(c.new_checked_out_at))}
+              {diff("Hours", fmtHours(c.old_hours), fmtHours(c.new_hours))}
+            </li>
+          ))}
+        </ul>
+      )}
     </Modal>
   );
 }

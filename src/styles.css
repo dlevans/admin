@@ -168,6 +168,12 @@ textarea { resize: vertical; }
 .badge.sms { background: var(--warn-soft); color: var(--text); }
 .badge.sent { background: var(--ok-soft); color: var(--ok); }
 .badge.failed { background: var(--err-soft); color: var(--err); }
+.badge.user-mod { background: var(--warn-soft); color: var(--warn); }
+
+/* Event change history */
+.change-list { list-style: none; margin: 0; padding: 0; }
+.change-list li { padding: .6rem 0; border-bottom: 1px solid var(--line); display: grid; gap: .2rem; }
+.change-list li:last-child { border-bottom: 0; }
 
 /* ── Login ─────────────────────────────────── */
 .login-wrap { min-height: 100vh; display: grid; place-items: center; padding: 1rem; }

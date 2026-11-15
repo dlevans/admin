@@ -49,6 +49,7 @@ export interface Opportunity {
   source: string;
   signup_count: number; // volunteers with an event for it (signed up or walked in)
   checkin_count: number; // volunteers who have checked in
+  user_modified_count?: number; // events whose volunteer corrected their own times/hours (API 2026-11-15+)
 }
 
 /** One volunteer's event for an opportunity: signup, arrival, departure, hours. */
@@ -62,6 +63,22 @@ export interface VolunteerEvent {
   checked_in_at: string | null;
   checked_out_at: string | null;
   hours: number | null;
+  user_modified?: boolean; // the volunteer corrected their own times/hours in the app (stays set after admin edits)
+  user_modified_at?: string | null;
+}
+
+/** One logged correction to a volunteer's event, by the volunteer or an admin. */
+export interface EventChange {
+  changed_at: string;
+  changed_by: string | null; // null if that account was deleted
+  changed_by_name: string | null;
+  changed_by_role: "volunteer" | "admin";
+  old_checked_in_at: string | null;
+  old_checked_out_at: string | null;
+  old_hours: number | null;
+  new_checked_in_at: string | null;
+  new_checked_out_at: string | null;
+  new_hours: number | null;
 }
 
 /** Admin correction. Only the fields sent change; null clears. Without hours, the API recalculates them from the times. */
@@ -243,6 +260,9 @@ export const api = {
   /** Correct someone's arrival/departure/hours, or record a volunteer who didn't use the app. */
   updateVolunteerEvent: (opportunityId: string, volunteerId: string, body: VolunteerEventUpdate) =>
     request<VolunteerEvent>("PUT", `/api/opportunities/${opportunityId}/events/${volunteerId}`, body),
+  /** History of corrections to one volunteer's event, oldest first. */
+  eventChanges: (opportunityId: string, volunteerId: string) =>
+    request<EventChange[]>("GET", `/api/opportunities/${opportunityId}/events/${volunteerId}/changes`),
   syncOpportunities: () => request<SyncResult>("POST", "/api/opportunities/sync"),
 
   sendPush: (body: {
