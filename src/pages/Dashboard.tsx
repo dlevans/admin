@@ -16,7 +16,7 @@ export default function Dashboard() {
         <>
           <div className="tiles">
             <Tile label="Volunteers" value={stats.volunteers} />
-            <Tile label="Upcoming events" value={stats.upcoming_events} />
+            <Tile label="Upcoming opportunities" value={stats.upcoming_events} />
             <Tile label="iPhones with the app" value={stats.ios_devices} />
             <Tile label="Android phones with the app" value={stats.android_devices} />
           </div>
@@ -31,7 +31,7 @@ export default function Dashboard() {
       <div className="row wrap actions">
         <Link className="button" to="/notifications">Send a push notification</Link>
         <Link className="button" to="/texts">Send a text</Link>
-        <Link className="button" to="/events">See event signups</Link>
+        <Link className="button" to="/opportunities">See signups and check-ins</Link>
       </div>
 
       <h2>Recently sent</h2>

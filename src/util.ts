@@ -34,11 +34,28 @@ export function plural(n: number, word: string, many = `${word}s`) {
   return `${n} ${n === 1 ? word : many}`;
 }
 
-/** What the compose pages accept through router state, e.g. from the Events page. */
+/** What the compose pages accept through router state, e.g. from the Opportunities page. */
 export interface ComposePreset {
   audience: Audience;
-  eventId?: string;
+  opportunityId?: string;
   volunteerIds?: string[];
+}
+
+/** ISO timestamp -> value for <input type="datetime-local"> (local time, minutes). */
+export function toLocalInput(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** <input type="datetime-local"> value -> ISO timestamp (null when blank). */
+export function fromLocalInput(value: string): string | null {
+  return value ? new Date(value).toISOString() : null;
+}
+
+export function fmtHours(h: number | null) {
+  return h == null ? "—" : `${Number(h.toFixed(2))} h`;
 }
 
 // SMS length: GSM-7 messages are 160 chars (153 per part when split); anything with

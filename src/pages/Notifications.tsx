@@ -39,7 +39,7 @@ export default function Notifications() {
     c.audience === "all"
       ? "everyone with the app"
       : c.audience === "event"
-        ? `everyone signed up for “${c.eventTitle ?? "the event"}”`
+        ? `everyone signed up for “${c.opportunityTitle ?? "the opportunity"}”`
         : plural(c.selected.length, "selected volunteer");
 
   return (
@@ -60,9 +60,9 @@ export default function Notifications() {
             channel="push"
             audience={c.audience}
             onAudience={c.setAudience}
-            events={c.events}
-            eventId={c.eventId}
-            onEventId={c.setEventId}
+            opportunities={c.opportunities}
+            opportunityId={c.opportunityId}
+            onOpportunityId={c.setOpportunityId}
             volunteers={c.volunteers}
             selected={c.selected}
             onSelected={c.setSelected}

@@ -1,14 +1,14 @@
 import { useMemo, useState } from "react";
-import { AdminVolunteer, Audience, VkcEvent } from "../api";
+import { AdminVolunteer, Audience, Opportunity } from "../api";
 import { fmtDate, fmtTime, plural } from "../util";
 
 interface Props {
   channel: "push" | "sms";
   audience: Audience;
   onAudience: (a: Audience) => void;
-  events: VkcEvent[];
-  eventId: string;
-  onEventId: (id: string) => void;
+  opportunities: Opportunity[];
+  opportunityId: string;
+  onOpportunityId: (id: string) => void;
   volunteers: AdminVolunteer[];
   selected: string[];
   onSelected: (ids: string[]) => void;
@@ -20,7 +20,7 @@ export default function AudiencePicker(p: Props) {
     ...(p.channel === "push"
       ? [{ value: "all" as Audience, label: "Everyone", hint: `All ${plural(p.totalUsers, "app user")}` }]
       : []),
-    { value: "event", label: "Signed up for an event", hint: "Everyone who signed up in the app" },
+    { value: "event", label: "Signed up for an opportunity", hint: "Everyone who signed up in the app" },
     { value: "volunteers", label: "Specific volunteers", hint: "Pick one or more people" },
   ];
 
@@ -45,12 +45,12 @@ export default function AudiencePicker(p: Props) {
 
       {p.audience === "event" && (
         <label>
-          Event
-          <select value={p.eventId} onChange={(e) => p.onEventId(e.target.value)} required>
-            <option value="">Choose an event…</option>
-            {p.events.map((ev) => (
-              <option key={ev.id} value={ev.id}>
-                {fmtDate(ev.start_at)} {fmtTime(ev.start_at)} · {ev.title} ({plural(ev.signup_count, "signup")})
+          Opportunity
+          <select value={p.opportunityId} onChange={(e) => p.onOpportunityId(e.target.value)} required>
+            <option value="">Choose an opportunity…</option>
+            {p.opportunities.map((o) => (
+              <option key={o.id} value={o.id}>
+                {fmtDate(o.start_at)} {fmtTime(o.start_at)} · {o.title} ({plural(o.signup_count, "signup")})
               </option>
             ))}
           </select>

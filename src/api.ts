@@ -35,25 +35,44 @@ export type VolunteerUpdate = Partial<
   >
 >;
 
-export interface VkcEvent {
+/** A volunteer opportunity: the details (what, where, when). */
+export interface Opportunity {
   id: string;
   title: string;
   description: string;
   start_at: string;
   end_at: string;
   location_name: string;
+  address: string;
   city: string;
   state: string;
   source: string;
-  signup_count: number;
+  signup_count: number; // volunteers with an event for it (signed up or walked in)
+  checkin_count: number; // volunteers who have checked in
 }
 
-export interface Signup {
+/** One volunteer's event for an opportunity: signup, arrival, departure, hours. */
+export interface VolunteerEvent {
   volunteer_id: string;
   name: string;
   email: string;
   phone: string;
   signed_up_at: string;
+  walk_in: boolean; // checked in (or was recorded by an admin) without signing up first
+  checked_in_at: string | null;
+  checked_out_at: string | null;
+  hours: number | null;
+}
+
+/** Admin correction. Only the fields sent change; null clears. Without hours, the API recalculates them from the times. */
+export type VolunteerEventUpdate = Partial<Pick<VolunteerEvent, "checked_in_at" | "checked_out_at" | "hours">>;
+
+export interface SyncResult {
+  fetched: number;
+  created: number;
+  updated: number;
+  removed: number;
+  kept_with_events: number; // gone from the website but kept because people signed up
 }
 
 export interface Stats {
@@ -65,6 +84,7 @@ export interface Stats {
   sms_configured: boolean;
 }
 
+// "event" = everyone signed up for one opportunity (the API's name for that audience).
 export type Audience = "all" | "event" | "volunteers";
 
 export interface SendResult {
@@ -91,7 +111,7 @@ export interface OutboundMessage {
   id: string;
   channel: "push" | "sms";
   audience: Audience;
-  event_title: string | null;
+  opportunity_title: string | null;
   sent_by_name: string | null;
   title: string | null;
   body: string;
@@ -216,20 +236,28 @@ export const api = {
     request<AdminVolunteer>("PUT", `/api/admin/volunteers/${id}`, body),
   deleteVolunteer: (id: string) => request<void>("DELETE", `/api/admin/volunteers/${id}`),
 
-  events: (includePast = false) =>
-    request<VkcEvent[]>("GET", `/api/events${includePast ? "?include_past=true" : ""}`),
-  signups: (eventId: string) => request<Signup[]>("GET", `/api/events/${eventId}/signups`),
-  syncEvents: () =>
-    request<{ fetched: number; created: number; updated: number; removed: number }>("POST", "/api/events/sync"),
+  opportunities: (includePast = false) =>
+    request<Opportunity[]>("GET", `/api/opportunities?include_past=${includePast}`),
+  opportunityEvents: (opportunityId: string) =>
+    request<VolunteerEvent[]>("GET", `/api/opportunities/${opportunityId}/events`),
+  /** Correct someone's arrival/departure/hours, or record a volunteer who didn't use the app. */
+  updateVolunteerEvent: (opportunityId: string, volunteerId: string, body: VolunteerEventUpdate) =>
+    request<VolunteerEvent>("PUT", `/api/opportunities/${opportunityId}/events/${volunteerId}`, body),
+  syncOpportunities: () => request<SyncResult>("POST", "/api/opportunities/sync"),
 
   sendPush: (body: {
     title: string;
     body: string;
     audience: Audience;
-    event_id?: string;
+    opportunity_id?: string;
     volunteer_ids?: string[];
   }) => request<SendResult>("POST", "/api/admin/notifications", body),
-  sendSms: (body: { body: string; audience: Exclude<Audience, "all">; event_id?: string; volunteer_ids?: string[] }) =>
+  sendSms: (body: {
+    body: string;
+    audience: Exclude<Audience, "all">;
+    opportunity_id?: string;
+    volunteer_ids?: string[];
+  }) =>
     request<SmsSendResult>("POST", "/api/admin/sms", body),
 
   messages: (channel?: "push" | "sms") =>

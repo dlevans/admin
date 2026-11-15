@@ -3,7 +3,7 @@ import { fmtStamp, plural } from "../util";
 
 function audienceLabel(m: OutboundMessage) {
   if (m.audience === "all") return "Everyone";
-  if (m.audience === "event") return m.event_title ? `Signed up: ${m.event_title}` : "Event signups";
+  if (m.audience === "event") return m.opportunity_title ? `Signed up: ${m.opportunity_title}` : "Opportunity signups";
   return plural(m.recipients, "volunteer");
 }
 

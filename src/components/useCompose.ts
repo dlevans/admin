@@ -7,29 +7,29 @@ import { ComposePreset, useLoad } from "../util";
 export function useCompose(defaultAudience: Audience) {
   const preset = (useLocation().state ?? null) as ComposePreset | null;
   const [audience, setAudience] = useState<Audience>(preset?.audience ?? defaultAudience);
-  const [eventId, setEventId] = useState(preset?.eventId ?? "");
+  const [opportunityId, setOpportunityId] = useState(preset?.opportunityId ?? "");
   const [selected, setSelected] = useState<string[]>(preset?.volunteerIds ?? []);
 
-  const lists = useLoad(() => Promise.all([api.events(), api.volunteers(), api.stats()]));
-  const [events, volunteers, stats] = lists.data ?? [[], [], null];
+  const lists = useLoad(() => Promise.all([api.opportunities(), api.volunteers(), api.stats()]));
+  const [opportunities, volunteers, stats] = lists.data ?? [[], [], null];
 
   const recipientCount = useMemo(() => {
     if (audience === "all") return stats?.volunteers ?? 0;
-    if (audience === "event") return events.find((e) => e.id === eventId)?.signup_count ?? 0;
+    if (audience === "event") return opportunities.find((o) => o.id === opportunityId)?.signup_count ?? 0;
     return selected.length;
-  }, [audience, eventId, selected, events, stats]);
+  }, [audience, opportunityId, selected, opportunities, stats]);
 
   const target = {
     audience,
-    event_id: audience === "event" ? eventId : undefined,
+    opportunity_id: audience === "event" ? opportunityId : undefined,
     volunteer_ids: audience === "volunteers" ? selected : undefined,
   };
-  const ready = audience === "all" || (audience === "event" ? !!eventId : selected.length > 0);
+  const ready = audience === "all" || (audience === "event" ? !!opportunityId : selected.length > 0);
 
   return {
-    audience, setAudience, eventId, setEventId, selected, setSelected,
-    events, volunteers, stats, listsError: lists.error, listsLoading: lists.loading,
+    audience, setAudience, opportunityId, setOpportunityId, selected, setSelected,
+    opportunities, volunteers, stats, listsError: lists.error, listsLoading: lists.loading,
     recipientCount, target, ready,
-    eventTitle: events.find((e) => e.id === eventId)?.title,
+    opportunityTitle: opportunities.find((o) => o.id === opportunityId)?.title,
   };
 }
