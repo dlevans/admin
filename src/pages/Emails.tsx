@@ -67,7 +67,7 @@ export default function Emails() {
 
       <form className="card stack narrow" onSubmit={review}>
         <AudiencePicker
-          channel="email"
+          channels={["email"]}
           audience={c.audience}
           onAudience={c.setAudience}
           opportunities={c.opportunities}

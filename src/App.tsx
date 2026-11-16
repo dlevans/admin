@@ -7,6 +7,7 @@ import History from "./pages/History";
 import Login from "./pages/Login";
 import Notifications from "./pages/Notifications";
 import Opportunities from "./pages/Opportunities";
+import Send from "./pages/Send";
 import Texts from "./pages/Texts";
 import Volunteers from "./pages/Volunteers";
 
@@ -54,6 +55,7 @@ export default function App() {
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/texts" element={<Texts />} />
           <Route path="/emails" element={<Emails />} />
+          <Route path="/send" element={<Send />} />
           <Route path="/opportunities" element={<Opportunities />} />
           <Route path="/events" element={<Navigate to="/opportunities" replace />} />
           <Route path="/volunteers" element={<Volunteers />} />

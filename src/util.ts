@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Audience } from "./api";
+import { AdminVolunteer, Audience, Channel } from "./api";
 
 /** Load data on mount (and on reload()), tracking loading/error state. */
 export function useLoad<T>(load: () => Promise<T>, deps: unknown[] = []) {
@@ -30,6 +30,41 @@ export const fmtDate = (iso: string) => dateFmt.format(new Date(iso));
 export const fmtTime = (iso: string) => timeFmt.format(new Date(iso));
 export const fmtStamp = (iso: string) => stampFmt.format(new Date(iso));
 
+/**
+ * US phone numbers as "(816) 555-1234", however they were typed ("8165551234", "816.555.1234",
+ * "+1 816 555 1234"...). Anything that isn't 10 digits (or 11 starting with 1) is shown as entered.
+ */
+export function fmtPhone(phone: string | null | undefined): string {
+  const raw = (phone ?? "").trim();
+  const m = raw.replace(/\D/g, "").match(/^1?(\d{3})(\d{3})(\d{4})$/);
+  return m ? `(${m[1]}) ${m[2]}-${m[3]}` : raw;
+}
+
+/** Whether the phone number is one the API can text (same rules as its to_e164). */
+export function textablePhone(phone: string | null | undefined): boolean {
+  const raw = (phone ?? "").trim();
+  const digits = raw.replace(/\D/g, "");
+  if (raw.startsWith("+")) return digits.length >= 8 && digits.length <= 15;
+  return digits.length === 10 || (digits.length === 11 && digits.startsWith("1"));
+}
+
+/** Whether a channel can reach this volunteer at all. */
+export function canReach(v: AdminVolunteer, ch: Channel): boolean {
+  return ch === "push" ? v.device_count > 0 : ch === "sms" ? textablePhone(v.phone) : v.email.includes("@");
+}
+
+/**
+ * Search match for a person: the query appears in any of the text fields, or its digits appear
+ * in the phone number (so "816555", "816-555" and "(816) 555" all find the same person).
+ */
+export function personMatches(query: string, phone: string | null | undefined, ...fields: (string | null | undefined)[]) {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  if ([...fields, phone, fmtPhone(phone)].some((f) => f?.toLowerCase().includes(q))) return true;
+  const digits = q.replace(/\D/g, "");
+  return digits.length >= 3 && /^[\d\s()+.-]+$/.test(q) && (phone ?? "").replace(/\D/g, "").includes(digits);
+}
+
 export function plural(n: number, word: string, many = `${word}s`) {
   return `${n} ${n === 1 ? word : many}`;
 }
@@ -37,6 +72,7 @@ export function plural(n: number, word: string, many = `${word}s`) {
 /** What the compose pages accept through router state, e.g. from the Opportunities page. */
 export interface ComposePreset {
   audience: Audience;
+  channels?: Channel[]; // for the combined Send page
   opportunityId?: string;
   volunteerIds?: string[];
 }

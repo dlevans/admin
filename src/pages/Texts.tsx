@@ -2,7 +2,7 @@ import { FormEvent, useState } from "react";
 import { api, SmsRecipientResult, SmsSendResult } from "../api";
 import AudiencePicker from "../components/AudiencePicker";
 import { useCompose } from "../components/useCompose";
-import { plural, smsSegments } from "../util";
+import { fmtPhone, plural, smsSegments } from "../util";
 
 const STATUS_LABEL: Record<SmsRecipientResult["status"], string> = {
   sent: "Sent",
@@ -62,7 +62,7 @@ export default function Texts() {
 
       <form className="card stack narrow" onSubmit={review}>
         <AudiencePicker
-          channel="sms"
+          channels={["sms"]}
           audience={c.audience}
           onAudience={c.setAudience}
           opportunities={c.opportunities}
@@ -124,7 +124,7 @@ export default function Texts() {
               {result.results.map((r) => (
                 <tr key={r.volunteer_id}>
                   <td>{r.name}</td>
-                  <td>{r.phone || "—"}</td>
+                  <td>{fmtPhone(r.phone) || "—"}</td>
                   <td>
                     <span className={`badge ${r.status}`}>{STATUS_LABEL[r.status]}</span>
                     {r.status === "failed" && r.error && <div className="muted small">{r.error}</div>}

@@ -58,6 +58,7 @@ export default function Dashboard() {
         <Link className="button" to="/notifications">Send a push notification</Link>
         <Link className="button" to="/texts">Send a text</Link>
         <Link className="button" to="/emails">Send an email</Link>
+        <Link className="button" to="/send">Send on several channels</Link>
         <Link className="button" to="/opportunities">See signups and check-ins</Link>
       </div>
 

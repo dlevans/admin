@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { AdminVolunteer, Audience, Channel, Opportunity } from "../api";
-import { fmtDate, fmtTime, plural } from "../util";
+import { canReach, fmtDate, fmtPhone, fmtTime, personMatches, plural } from "../util";
 
 interface Props {
-  channel: Channel;
+  /** The channels this message goes out on; decides which audiences are offered and what each row shows. */
+  channels: Channel[];
   audience: Audience;
   onAudience: (a: Audience) => void;
   opportunities: Opportunity[];
@@ -16,25 +17,35 @@ interface Props {
 }
 
 export default function AudiencePicker(p: Props) {
-  const options: { value: Audience; label: string; hint: string }[] = [
-    ...(p.channel === "sms"
-      ? []
-      : [{ value: "all" as Audience, label: "Everyone", hint: `All ${plural(p.totalUsers, p.channel === "push" ? "app user" : "volunteer")}` }]),
+  const noEveryone = p.channels.includes("sms"); // the API doesn't text everyone at once
+  const onlyPush = p.channels.length === 1 && p.channels[0] === "push";
+  const options: { value: Audience; label: string; hint: string; disabled?: boolean }[] = [
+    {
+      value: "all",
+      label: "Everyone",
+      hint: noEveryone
+        ? "Not available for texts"
+        : `All ${plural(p.totalUsers, onlyPush ? "app user" : "volunteer")}`,
+      disabled: noEveryone,
+    },
     { value: "event", label: "Signed up for an opportunity", hint: "Everyone who signed up in the app" },
     { value: "volunteers", label: "Specific volunteers", hint: "Pick one or more people" },
   ];
+  // Single-channel SMS pages never offered "Everyone"; keep it that way.
+  const shown = p.channels.length === 1 && noEveryone ? options.filter((o) => o.value !== "all") : options;
 
   return (
     <fieldset className="audience">
       <legend>Send to</legend>
       <div className="seg">
-        {options.map((o) => (
-          <label key={o.value} className={p.audience === o.value ? "on" : ""}>
+        {shown.map((o) => (
+          <label key={o.value} className={`${p.audience === o.value ? "on" : ""}${o.disabled ? " disabled" : ""}`}>
             <input
               type="radio"
               name="audience"
               value={o.value}
               checked={p.audience === o.value}
+              disabled={o.disabled}
               onChange={() => p.onAudience(o.value)}
             />
             <strong>{o.label}</strong>
@@ -42,6 +53,9 @@ export default function AudiencePicker(p: Props) {
           </label>
         ))}
       </div>
+      {noEveryone && p.audience === "all" && (
+        <div className="alert warn">Texts can't go to everyone at once. Choose an opportunity or specific volunteers.</div>
+      )}
 
       {p.audience === "event" && (
         <label>
@@ -58,38 +72,35 @@ export default function AudiencePicker(p: Props) {
       )}
 
       {p.audience === "volunteers" && (
-        <VolunteerPicker channel={p.channel} volunteers={p.volunteers} selected={p.selected} onSelected={p.onSelected} />
+        <VolunteerPicker channels={p.channels} volunteers={p.volunteers} selected={p.selected} onSelected={p.onSelected} />
       )}
     </fieldset>
   );
 }
 
 function VolunteerPicker({
-  channel,
+  channels,
   volunteers,
   selected,
   onSelected,
 }: {
-  channel: Channel;
+  channels: Channel[];
   volunteers: AdminVolunteer[];
   selected: string[];
   onSelected: (ids: string[]) => void;
 }) {
   const [q, setQ] = useState("");
   const byId = useMemo(() => new Map(volunteers.map((v) => [v.id, v])), [volunteers]);
-  const matches = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    const list = s
-      ? volunteers.filter((v) => `${v.name} ${v.email} ${v.phone}`.toLowerCase().includes(s))
-      : volunteers;
-    return list.slice(0, 50);
-  }, [q, volunteers]);
+  const matches = useMemo(
+    () => volunteers.filter((v) => personMatches(q, v.phone, v.name, v.email)).slice(0, 50),
+    [q, volunteers],
+  );
 
   const toggle = (id: string) =>
     onSelected(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]);
 
-  const reachable = (v: AdminVolunteer) =>
-    channel === "push" ? v.device_count > 0 : channel === "sms" ? !!v.phone.trim() : v.email.includes("@");
+  // Dimmed when none of the chosen channels can reach them.
+  const reachable = (v: AdminVolunteer) => channels.length === 0 || channels.some((ch) => canReach(v, ch));
 
   return (
     <div className="picker">
@@ -113,9 +124,12 @@ function VolunteerPicker({
               <input type="checkbox" checked={selected.includes(v.id)} onChange={() => toggle(v.id)} />
               <span className="grow">
                 {v.name}
-                <span className="muted small"> · {channel === "sms" ? v.phone || "no phone" : v.email}</span>
+                <span className="muted small">
+                  {channels.includes("sms") && ` · ${fmtPhone(v.phone) || "no phone"}`}
+                  {(channels.includes("email") || !channels.includes("sms")) && ` · ${v.email}`}
+                </span>
               </span>
-              {channel === "push" && (
+              {channels.includes("push") && (
                 <span className="muted small">{v.device_count ? plural(v.device_count, "device") : "app not installed"}</span>
               )}
             </label>

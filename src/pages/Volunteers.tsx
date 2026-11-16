@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AdminVolunteer, api } from "../api";
+import { AdminVolunteer, api, Channel } from "../api";
 import { useAuth } from "../auth";
+import ChannelToggles from "../components/ChannelToggles";
 import DeleteVolunteer from "../components/DeleteVolunteer";
 import EditVolunteer from "../components/EditVolunteer";
-import { ComposePreset, plural, useLoad } from "../util";
+import { canReach, ComposePreset, fmtPhone, personMatches, plural, useLoad } from "../util";
 
 export default function Volunteers() {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ export default function Volunteers() {
   const { data, setData, error, loading } = useLoad(() => api.volunteers());
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [channels, setChannels] = useState<Channel[]>([]);
   const [editing, setEditing] = useState<AdminVolunteer | null>(null);
   const [deleting, setDeleting] = useState<AdminVolunteer | null>(null);
 
@@ -28,8 +30,7 @@ export default function Volunteers() {
   };
 
   const rows = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    return (data ?? []).filter((v) => !s || `${v.name} ${v.email} ${v.phone} ${v.city}`.toLowerCase().includes(s));
+    return (data ?? []).filter((v) => personMatches(q, v.phone, v.name, v.email, v.city));
   }, [data, q]);
 
   const toggle = (id: string) => {
@@ -45,20 +46,26 @@ export default function Volunteers() {
     setSelected(next);
   };
 
-  const compose = (to: string) =>
-    navigate(to, { state: { audience: "volunteers", volunteerIds: [...selected] } satisfies ComposePreset });
+  const send = () =>
+    navigate("/send", {
+      state: { audience: "volunteers", volunteerIds: [...selected], channels } satisfies ComposePreset,
+    });
+
+  // e.g. "3 have the app · 5 can get texts" for the channels that are on
+  const chosen = (data ?? []).filter((v) => selected.has(v.id));
+  const reachNote = channels
+    .map((ch) => {
+      const n = chosen.filter((v) => canReach(v, ch)).length;
+      return ch === "push" ? `${n} have the app` : ch === "sms" ? `${n} can get texts` : `${n} have an email`;
+    })
+    .join(" · ");
 
   return (
     <div className="page">
       <h1>Volunteers</h1>
       <div className="row wrap between">
         <input type="search" className="search" placeholder="Search name, email, phone, city…" value={q} onChange={(e) => setQ(e.target.value)} />
-        <div className="row">
-          <span className="muted small">{plural(selected.size, "selected", "selected")}</span>
-          <button className="primary" disabled={!selected.size} onClick={() => compose("/texts")}>Text selected</button>
-          <button disabled={!selected.size} onClick={() => compose("/notifications")}>Notify selected</button>
-          <button disabled={!selected.size} onClick={() => compose("/emails")}>Email selected</button>
-        </div>
+        <span className="muted small">{plural(selected.size, "selected", "selected")}</span>
       </div>
       {error && <div className="alert error">{error}</div>}
       {loading && <p className="muted">Loading…</p>}
@@ -84,7 +91,7 @@ export default function Volunteers() {
                   <td>
                     {v.name} {v.role === "admin" && <span className="badge">admin</span>}
                   </td>
-                  <td>{v.phone || "—"}</td>
+                  <td>{fmtPhone(v.phone) || "—"}</td>
                   <td className="hide-sm">{v.email}</td>
                   <td className="hide-sm">{v.city}{v.state && `, ${v.state}`}</td>
                   <td className="muted small">{v.device_count ? plural(v.device_count, "device") : "—"}</td>
@@ -104,6 +111,20 @@ export default function Volunteers() {
             </tbody>
           </table>
           {rows.length === 0 && <p className="muted pad">No volunteers match.</p>}
+        </div>
+      )}
+
+      {selected.size > 0 && (
+        <div className="send-bar">
+          <strong>{plural(selected.size, "volunteer")}</strong>
+          <ChannelToggles value={channels} onChange={setChannels} compact />
+          <span className="muted small grow">{channels.length ? reachNote : "Choose push, text and/or email"}</span>
+          <button type="button" className="link small" onClick={() => setSelected(new Set())}>
+            Clear
+          </button>
+          <button className="primary" disabled={!channels.length} onClick={send}>
+            Send…
+          </button>
         </div>
       )}
 

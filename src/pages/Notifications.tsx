@@ -57,7 +57,7 @@ export default function Notifications() {
       <div className="two-col">
         <form className="card stack" onSubmit={review}>
           <AudiencePicker
-            channel="push"
+            channels={["push"]}
             audience={c.audience}
             onAudience={c.setAudience}
             opportunities={c.opportunities}

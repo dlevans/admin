@@ -1,8 +1,9 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AdminVolunteer, api, Opportunity, VolunteerEvent, VolunteerEventUpdate } from "../api";
+import { AdminVolunteer, api, Channel, Opportunity, VolunteerEvent, VolunteerEventUpdate } from "../api";
+import ChannelToggles from "../components/ChannelToggles";
 import Modal from "../components/Modal";
-import { ComposePreset, fmtDate, fmtHours, fmtStamp, fmtTime, fromLocalInput, plural, toLocalInput, useLoad } from "../util";
+import { ComposePreset, fmtDate, fmtHours, fmtPhone, fmtStamp, fmtTime, fromLocalInput, plural, personMatches, toLocalInput, useLoad } from "../util";
 
 /** Opportunities, and for each one its volunteers' events: signup, arrival, departure, hours. */
 export default function Opportunities() {
@@ -77,8 +78,9 @@ function OpportunityRow({
   onChanged: () => void;
 }) {
   const navigate = useNavigate();
-  const compose = (to: string) =>
-    navigate(to, { state: { audience: "event", opportunityId: opp.id } satisfies ComposePreset });
+  const [channels, setChannels] = useState<Channel[]>([]);
+  const send = () =>
+    navigate("/send", { state: { audience: "event", opportunityId: opp.id, channels } satisfies ComposePreset });
 
   return (
     <li className="card">
@@ -101,17 +103,15 @@ function OpportunityRow({
       </button>
       {open && (
         <div className="event-body">
-          <div className="row wrap">
-            <button className="primary" disabled={!opp.signup_count} onClick={() => compose("/texts")}>
-              Text everyone signed up
-            </button>
-            <button disabled={!opp.signup_count} onClick={() => compose("/notifications")}>
-              Notify everyone signed up
-            </button>
-            <button disabled={!opp.signup_count} onClick={() => compose("/emails")}>
-              Email everyone signed up
-            </button>
-          </div>
+          {opp.signup_count > 0 && (
+            <div className="row wrap">
+              <span className="muted small">Message everyone signed up:</span>
+              <ChannelToggles value={channels} onChange={setChannels} compact />
+              <button className="primary" disabled={!channels.length} onClick={send}>
+                Send…
+              </button>
+            </div>
+          )}
           <Roster opp={opp} onChanged={onChanged} />
         </div>
       )}
@@ -175,7 +175,7 @@ function Roster({ opp, onChanged }: { opp: Opportunity; onChanged: () => void })
                     </>
                   )}
                 </td>
-                <td className="hide-sm">{ev.phone || "—"}</td>
+                <td className="hide-sm">{fmtPhone(ev.phone) || "—"}</td>
                 <td className="hide-sm muted small">{ev.walk_in ? "—" : fmtStamp(ev.signed_up_at)}</td>
                 <td className="small">{ev.checked_in_at ? fmtStamp(ev.checked_in_at) : "—"}</td>
                 <td className="small">{ev.checked_out_at ? fmtStamp(ev.checked_out_at) : "—"}</td>
@@ -309,10 +309,9 @@ function AddVolunteer({
   const [q, setQ] = useState("");
   const [picked, setPicked] = useState<AdminVolunteer | null>(null);
   const matches = useMemo(() => {
-    const s = q.trim().toLowerCase();
     return (volunteers ?? [])
       .filter((v) => !exclude.has(v.id))
-      .filter((v) => !s || `${v.name} ${v.email} ${v.phone}`.toLowerCase().includes(s))
+      .filter((v) => personMatches(q, v.phone, v.name, v.email))
       .slice(0, 50);
   }, [q, volunteers, exclude]);
 

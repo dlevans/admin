@@ -210,6 +210,31 @@ textarea { resize: vertical; }
 .seg label input { position: absolute; opacity: 0; pointer-events: none; }
 .seg label .muted { font-weight: 400; }
 .seg.inline { margin-bottom: 1rem; }
+.seg label.disabled { cursor: not-allowed; opacity: .55; }
+/* Channel toggles are multi-select: show a check on the ones that are on. */
+.seg.toggles label strong::before { content: "○ "; color: var(--muted); }
+.seg.toggles label.on strong::before { content: "✓ "; color: var(--primary); }
+.seg.compact label { flex: 0 0 auto; padding: .35rem .85rem; flex-direction: row; }
+
+/* Bottom bar on list pages: pick channels, then Send */
+.send-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  flex-wrap: wrap;
+  padding: .75rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, .08);
+}
+.send-bar .grow { min-width: 8rem; }
+.channel-result + .channel-result { margin-top: 1.25rem; }
+.channel-result h2 { margin-top: 0; }
 .seg.inline button.on { background: var(--charcoal); color: var(--on-charcoal); border-color: var(--charcoal); }
 
 .picker { display: flex; flex-direction: column; gap: .5rem; }
@@ -342,3 +367,6 @@ button.danger-outline:hover:not(:disabled) { border-color: var(--err); }
   max-height: 420px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere;
 }
 @media (max-width: 640px) { .ep-sum { display: none; } }
+
+.error-text { color: var(--err); }
+.send-summary { margin: 0 0 .75rem; padding-left: 1.2rem; display: grid; gap: .25rem; }
