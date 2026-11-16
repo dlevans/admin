@@ -68,6 +68,8 @@ export default function Texts() {
           opportunities={c.opportunities}
           opportunityId={c.opportunityId}
           onOpportunityId={c.setOpportunityId}
+          showPast={c.showPast}
+          onShowPast={c.setShowPast}
           volunteers={c.volunteers}
           selected={c.selected}
           onSelected={c.setSelected}

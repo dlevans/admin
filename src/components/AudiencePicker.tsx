@@ -10,6 +10,8 @@ interface Props {
   opportunities: Opportunity[];
   opportunityId: string;
   onOpportunityId: (id: string) => void;
+  showPast: boolean;
+  onShowPast: (on: boolean) => void;
   volunteers: AdminVolunteer[];
   selected: string[];
   onSelected: (ids: string[]) => void;
@@ -58,23 +60,58 @@ export default function AudiencePicker(p: Props) {
       )}
 
       {p.audience === "event" && (
-        <label>
-          Opportunity
-          <select value={p.opportunityId} onChange={(e) => p.onOpportunityId(e.target.value)} required>
-            <option value="">Choose an opportunity…</option>
-            {p.opportunities.map((o) => (
-              <option key={o.id} value={o.id}>
-                {fmtDate(o.start_at)} {fmtTime(o.start_at)} · {o.title} ({plural(o.signup_count, "signup")})
-              </option>
-            ))}
-          </select>
-        </label>
+        <OpportunitySelect
+          opportunities={p.opportunities}
+          value={p.opportunityId}
+          onChange={p.onOpportunityId}
+          showPast={p.showPast}
+          onShowPast={p.onShowPast}
+        />
       )}
 
       {p.audience === "volunteers" && (
         <VolunteerPicker channels={p.channels} volunteers={p.volunteers} selected={p.selected} onSelected={p.onSelected} />
       )}
     </fieldset>
+  );
+}
+
+function OpportunitySelect({
+  opportunities,
+  value,
+  onChange,
+  showPast,
+  onShowPast,
+}: {
+  opportunities: Opportunity[];
+  value: string;
+  onChange: (id: string) => void;
+  showPast: boolean;
+  onShowPast: (on: boolean) => void;
+}) {
+  const now = Date.now();
+  const upcoming = opportunities.filter((o) => new Date(o.end_at).getTime() >= now);
+  const past = opportunities.filter((o) => new Date(o.end_at).getTime() < now);
+  const option = (o: Opportunity) => (
+    <option key={o.id} value={o.id}>
+      {fmtDate(o.start_at)} {fmtTime(o.start_at)} · {o.title} ({plural(o.signup_count, "signup")})
+    </option>
+  );
+
+  return (
+    <div className="stack tight">
+      <label>
+        Opportunity
+        <select value={value} onChange={(e) => onChange(e.target.value)} required>
+          <option value="">Choose an opportunity…</option>
+          {past.length > 0 ? <optgroup label="Upcoming">{upcoming.map(option)}</optgroup> : upcoming.map(option)}
+          {past.length > 0 && <optgroup label="Past (most recent first)">{past.map(option)}</optgroup>}
+        </select>
+      </label>
+      <label className="check small">
+        <input type="checkbox" checked={showPast} onChange={(e) => onShowPast(e.target.checked)} /> Show past
+      </label>
+    </div>
   );
 }
 
