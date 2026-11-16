@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { AdminVolunteer, api, Channel, Opportunity, VolunteerEvent, VolunteerEventUpdate } from "../api";
 import ChannelToggles from "../components/ChannelToggles";
 import Modal from "../components/Modal";
-import { ComposePreset, fmtDate, fmtHours, fmtPhone, fmtStamp, fmtTime, fromLocalInput, plural, personMatches, toLocalInput, useLoad } from "../util";
+import { ComposePreset, composePath, fmtDate, fmtHours, fmtPhone, fmtStamp, fmtTime, fromLocalInput, plural, personMatches, toLocalInput, useLoad } from "../util";
 
 /** Opportunities, and for each one its volunteers' events: signup, arrival, departure, hours. */
 export default function Opportunities() {
@@ -80,7 +80,7 @@ function OpportunityRow({
   const navigate = useNavigate();
   const [channels, setChannels] = useState<Channel[]>([]);
   const send = () =>
-    navigate("/send", { state: { audience: "event", opportunityId: opp.id, channels } satisfies ComposePreset });
+    navigate(composePath(channels), { state: { audience: "event", opportunityId: opp.id, channels } satisfies ComposePreset });
 
   return (
     <li className="card">

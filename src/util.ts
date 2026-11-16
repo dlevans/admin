@@ -77,6 +77,12 @@ export interface ComposePreset {
   volunteerIds?: string[];
 }
 
+/** The compose page for a set of channels: one channel gets its own page, several the combined one. */
+export function composePath(channels: Channel[]): string {
+  if (channels.length !== 1) return "/send";
+  return channels[0] === "push" ? "/notifications" : channels[0] === "sms" ? "/texts" : "/emails";
+}
+
 /** ISO timestamp -> value for <input type="datetime-local"> (local time, minutes). */
 export function toLocalInput(iso: string | null): string {
   if (!iso) return "";

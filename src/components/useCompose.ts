@@ -10,8 +10,13 @@ export function useCompose(defaultAudience: Audience) {
   const [opportunityId, setOpportunityId] = useState(preset?.opportunityId ?? "");
   const [selected, setSelected] = useState<string[]>(preset?.volunteerIds ?? []);
 
-  const lists = useLoad(() => Promise.all([api.opportunities(), api.volunteers(), api.stats()]));
-  const [opportunities, volunteers, stats] = lists.data ?? [[], [], null];
+  const lists = useLoad(() => Promise.all([api.opportunities(true), api.volunteers(), api.stats()]));
+  const [allOpportunities, volunteers, stats] = lists.data ?? [[], [], null];
+  // Upcoming ones, plus the one we were sent here for even if it has already ended.
+  const opportunities = useMemo(() => {
+    const now = Date.now();
+    return allOpportunities.filter((o) => new Date(o.end_at).getTime() >= now || o.id === preset?.opportunityId);
+  }, [allOpportunities, preset?.opportunityId]);
 
   const recipientCount = useMemo(() => {
     if (audience === "all") return stats?.volunteers ?? 0;

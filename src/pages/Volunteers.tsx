@@ -5,7 +5,7 @@ import { useAuth } from "../auth";
 import ChannelToggles from "../components/ChannelToggles";
 import DeleteVolunteer from "../components/DeleteVolunteer";
 import EditVolunteer from "../components/EditVolunteer";
-import { canReach, ComposePreset, fmtPhone, personMatches, plural, useLoad } from "../util";
+import { canReach, ComposePreset, composePath, fmtPhone, personMatches, plural, useLoad } from "../util";
 
 export default function Volunteers() {
   const navigate = useNavigate();
@@ -47,7 +47,7 @@ export default function Volunteers() {
   };
 
   const send = () =>
-    navigate("/send", {
+    navigate(composePath(channels), {
       state: { audience: "volunteers", volunteerIds: [...selected], channels } satisfies ComposePreset,
     });
 
