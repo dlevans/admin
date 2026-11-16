@@ -2,6 +2,7 @@ import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "./auth";
 import ApiTester from "./pages/ApiTester";
 import Dashboard from "./pages/Dashboard";
+import Emails from "./pages/Emails";
 import History from "./pages/History";
 import Login from "./pages/Login";
 import Notifications from "./pages/Notifications";
@@ -13,6 +14,7 @@ const NAV = [
   { to: "/", label: "Dashboard", end: true },
   { to: "/notifications", label: "Push notifications" },
   { to: "/texts", label: "Text messages" },
+  { to: "/emails", label: "Emails" },
   { to: "/opportunities", label: "Opportunities" },
   { to: "/volunteers", label: "Volunteers" },
   { to: "/history", label: "History" },
@@ -51,6 +53,7 @@ export default function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/texts" element={<Texts />} />
+          <Route path="/emails" element={<Emails />} />
           <Route path="/opportunities" element={<Opportunities />} />
           <Route path="/events" element={<Navigate to="/opportunities" replace />} />
           <Route path="/volunteers" element={<Volunteers />} />

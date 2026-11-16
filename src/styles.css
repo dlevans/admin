@@ -166,6 +166,7 @@ textarea { resize: vertical; }
 }
 .badge.push { background: var(--primary-soft); color: var(--text); }
 .badge.sms { background: var(--warn-soft); color: var(--text); }
+.badge.email { background: var(--ok-soft); color: var(--text); }
 .badge.sent { background: var(--ok-soft); color: var(--ok); }
 .badge.failed { background: var(--err-soft); color: var(--err); }
 .badge.user-mod { background: var(--warn-soft); color: var(--warn); }
@@ -270,6 +271,11 @@ textarea { resize: vertical; }
 .event-body { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 1rem; }
 .messages .card { display: flex; flex-direction: column; gap: .35rem; padding: 1rem 1.25rem; }
 .msg-body { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg-actions { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.msg-actions .confirm-inline { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+.section-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-top: 1.5rem; }
+.section-head h2 { margin: 0; }
+.section-head + .messages, .section-head + p { margin-top: .75rem; }
 
 /* ── Row actions / modal ───────────────────── */
 .row-actions { white-space: nowrap; text-align: right; }

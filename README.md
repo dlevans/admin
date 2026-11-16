@@ -5,9 +5,10 @@ Sign in with an app account that has `role = admin` (`python make_admin.py you@e
 
 - **Push notifications**: to everyone, everyone signed up for an event, or chosen volunteers (iOS + Android via Firebase)
 - **Text messages**: to everyone signed up for an event, or chosen volunteers (Twilio)
+- **Emails**: to everyone, everyone signed up for an event, or chosen volunteers (SMTP, `SMTP_*` in the API's `.env`)
 - **Events**: upcoming events with signup counts and who signed up; "Text everyone signed up"
 - **Volunteers**: search, multi-select, then text or notify
-- **History**: everything sent, by whom, and how many it reached
+- **History**: everything sent, by whom, and how many it reached; delete entries you don't need
 
 ## Develop
 

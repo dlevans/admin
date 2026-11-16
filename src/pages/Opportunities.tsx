@@ -108,6 +108,9 @@ function OpportunityRow({
             <button disabled={!opp.signup_count} onClick={() => compose("/notifications")}>
               Notify everyone signed up
             </button>
+            <button disabled={!opp.signup_count} onClick={() => compose("/emails")}>
+              Email everyone signed up
+            </button>
           </div>
           <Roster opp={opp} onChanged={onChanged} />
         </div>

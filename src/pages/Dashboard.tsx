@@ -1,11 +1,36 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
 import MessageList from "../components/MessageList";
-import { useLoad } from "../util";
+import { plural, useLoad } from "../util";
+
+const COLLAPSED_KEY = "vkc-admin-recent-collapsed";
+
+function readCollapsed() {
+  try {
+    return localStorage.getItem(COLLAPSED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
 
 export default function Dashboard() {
-  const { data, error } = useLoad(() => Promise.all([api.stats(), api.messages()]));
+  const { data, setData, error } = useLoad(() => Promise.all([api.stats(), api.messages()]));
   const [stats, messages] = data ?? [null, []];
+  const [collapsed, setCollapsed] = useState(readCollapsed);
+
+  const toggleCollapsed = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    try {
+      localStorage.setItem(COLLAPSED_KEY, next ? "1" : "0");
+    } catch {
+      // storage blocked: the choice just won't be remembered
+    }
+  };
+
+  const removeMessage = (id: string) =>
+    setData((d) => (d ? [d[0], d[1].filter((m) => m.id !== id)] : d));
 
   return (
     <div className="page">
@@ -24,6 +49,7 @@ export default function Dashboard() {
           <div className="row wrap">
             <Status ok={stats.push_configured} label="Push notifications" />
             <Status ok={stats.sms_configured} label="Text messages" />
+            <Status ok={!!stats.email_configured} label="Email" />
           </div>
         </>
       )}
@@ -31,12 +57,22 @@ export default function Dashboard() {
       <div className="row wrap actions">
         <Link className="button" to="/notifications">Send a push notification</Link>
         <Link className="button" to="/texts">Send a text</Link>
+        <Link className="button" to="/emails">Send an email</Link>
         <Link className="button" to="/opportunities">See signups and check-ins</Link>
       </div>
 
-      <h2>Recently sent</h2>
-      <MessageList messages={messages.slice(0, 8)} />
-      {messages.length > 8 && <Link to="/history">See all</Link>}
+      <div className="section-head">
+        <h2>Recently sent</h2>
+        <button className="small-btn" onClick={toggleCollapsed} aria-expanded={!collapsed}>
+          {collapsed ? `Show${messages.length ? ` (${plural(Math.min(messages.length, 8), "message")})` : ""}` : "Hide"}
+        </button>
+      </div>
+      {!collapsed && (
+        <>
+          <MessageList messages={messages.slice(0, 8)} onDeleted={removeMessage} />
+          {messages.length > 8 && <Link to="/history">See all</Link>}
+        </>
+      )}
     </div>
   );
 }

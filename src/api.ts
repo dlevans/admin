@@ -99,6 +99,7 @@ export interface Stats {
   upcoming_events: number;
   push_configured: boolean;
   sms_configured: boolean;
+  email_configured?: boolean; // API 2026-11-15+ (SMTP_* settings)
 }
 
 // "event" = everyone signed up for one opportunity (the API's name for that audience).
@@ -124,13 +125,27 @@ export interface SmsSendResult extends SendResult {
   results: SmsRecipientResult[];
 }
 
+export interface EmailRecipientResult {
+  volunteer_id: string;
+  name: string;
+  email: string;
+  status: "sent" | "failed" | "no_email";
+  error: string | null;
+}
+
+export interface EmailSendResult extends SendResult {
+  results: EmailRecipientResult[];
+}
+
+export type Channel = "push" | "sms" | "email";
+
 export interface OutboundMessage {
   id: string;
-  channel: "push" | "sms";
+  channel: Channel;
   audience: Audience;
   opportunity_title: string | null;
   sent_by_name: string | null;
-  title: string | null;
+  title: string | null; // push title or email subject
   body: string;
   recipients: number;
   sent: number;
@@ -280,6 +295,16 @@ export const api = {
   }) =>
     request<SmsSendResult>("POST", "/api/admin/sms", body),
 
-  messages: (channel?: "push" | "sms") =>
+  sendEmail: (body: {
+    subject: string;
+    body: string;
+    audience: Audience;
+    opportunity_id?: string;
+    volunteer_ids?: string[];
+  }) => request<EmailSendResult>("POST", "/api/admin/email", body),
+
+  messages: (channel?: Channel) =>
     request<OutboundMessage[]>("GET", `/api/admin/messages${channel ? `?channel=${channel}` : ""}`),
+  /** Remove a message from the history (it has already been delivered; this doesn't unsend it). */
+  deleteMessage: (id: string) => request<void>("DELETE", `/api/admin/messages/${id}`),
 };

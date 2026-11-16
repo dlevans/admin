@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
-import { AdminVolunteer, Audience, Opportunity } from "../api";
+import { AdminVolunteer, Audience, Channel, Opportunity } from "../api";
 import { fmtDate, fmtTime, plural } from "../util";
 
 interface Props {
-  channel: "push" | "sms";
+  channel: Channel;
   audience: Audience;
   onAudience: (a: Audience) => void;
   opportunities: Opportunity[];
@@ -17,9 +17,9 @@ interface Props {
 
 export default function AudiencePicker(p: Props) {
   const options: { value: Audience; label: string; hint: string }[] = [
-    ...(p.channel === "push"
-      ? [{ value: "all" as Audience, label: "Everyone", hint: `All ${plural(p.totalUsers, "app user")}` }]
-      : []),
+    ...(p.channel === "sms"
+      ? []
+      : [{ value: "all" as Audience, label: "Everyone", hint: `All ${plural(p.totalUsers, p.channel === "push" ? "app user" : "volunteer")}` }]),
     { value: "event", label: "Signed up for an opportunity", hint: "Everyone who signed up in the app" },
     { value: "volunteers", label: "Specific volunteers", hint: "Pick one or more people" },
   ];
@@ -70,7 +70,7 @@ function VolunteerPicker({
   selected,
   onSelected,
 }: {
-  channel: "push" | "sms";
+  channel: Channel;
   volunteers: AdminVolunteer[];
   selected: string[];
   onSelected: (ids: string[]) => void;
@@ -88,7 +88,8 @@ function VolunteerPicker({
   const toggle = (id: string) =>
     onSelected(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]);
 
-  const reachable = (v: AdminVolunteer) => (channel === "push" ? v.device_count > 0 : !!v.phone.trim());
+  const reachable = (v: AdminVolunteer) =>
+    channel === "push" ? v.device_count > 0 : channel === "sms" ? !!v.phone.trim() : v.email.includes("@");
 
   return (
     <div className="picker">

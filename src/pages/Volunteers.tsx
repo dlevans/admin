@@ -57,6 +57,7 @@ export default function Volunteers() {
           <span className="muted small">{plural(selected.size, "selected", "selected")}</span>
           <button className="primary" disabled={!selected.size} onClick={() => compose("/texts")}>Text selected</button>
           <button disabled={!selected.size} onClick={() => compose("/notifications")}>Notify selected</button>
+          <button disabled={!selected.size} onClick={() => compose("/emails")}>Email selected</button>
         </div>
       </div>
       {error && <div className="alert error">{error}</div>}
