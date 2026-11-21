@@ -1,7 +1,17 @@
 import { ReactNode, useEffect, useRef } from "react";
 
 /** Native <dialog> as a modal: Esc and the backdrop close it, focus is trapped by the browser. */
-export default function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+export default function Modal({
+  title,
+  onClose,
+  children,
+  wide = false,
+}: {
+  title: string;
+  onClose: () => void;
+  children: ReactNode;
+  wide?: boolean;
+}) {
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -13,7 +23,7 @@ export default function Modal({ title, onClose, children }: { title: string; onC
   return (
     <dialog
       ref={ref}
-      className="modal"
+      className={wide ? "modal wide" : "modal"}
       onCancel={(e) => {
         e.preventDefault();
         onClose();

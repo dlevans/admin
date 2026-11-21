@@ -3,7 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { AdminVolunteer, api, Channel, Opportunity, VolunteerEvent, VolunteerEventUpdate } from "../api";
 import ChannelToggles from "../components/ChannelToggles";
 import Modal from "../components/Modal";
+import OpportunityForm from "../components/OpportunityForm";
 import { ComposePreset, composePath, fmtDate, fmtHours, fmtPhone, fmtStamp, fmtTime, fromLocalInput, plural, personMatches, toLocalInput, useLoad } from "../util";
+
+/** Made on this admin site rather than imported from the volunteerkc.com calendar. */
+const isSpecial = (o: Opportunity) => o.source === "manual";
+
+type SourceFilter = "all" | "calendar" | "special";
 
 /** Opportunities, and for each one its volunteers' events: signup, arrival, departure, hours. */
 export default function Opportunities() {
@@ -12,6 +18,12 @@ export default function Opportunities() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [filter, setFilter] = useState<SourceFilter>("all");
+  const shown = (opportunities ?? []).filter((o) =>
+    filter === "all" ? true : filter === "special" ? isSpecial(o) : !isSpecial(o),
+  );
+  const specialCount = (opportunities ?? []).filter(isSpecial).length;
 
   const sync = async () => {
     setSyncing(true);
@@ -44,15 +56,36 @@ export default function Opportunities() {
           <button onClick={sync} disabled={syncing}>
             {syncing ? "Syncing…" : "Sync from volunteerkc.com"}
           </button>
+          <button onClick={() => setCreating(true)}>
+            + New opportunity
+          </button>
         </div>
+      </div>
+      <div className="seg compact source-filter" role="radiogroup" aria-label="Show">
+        {(
+          [
+            ["all", "All"],
+            ["calendar", "volunteerkc.com calendar"],
+            ["special", `Special (${specialCount})`],
+          ] as [SourceFilter, string][]
+        ).map(([value, label]) => (
+          <label key={value} className={filter === value ? "on" : ""}>
+            <input type="radio" name="source" checked={filter === value} onChange={() => setFilter(value)} />
+            {label}
+          </label>
+        ))}
       </div>
       {syncMsg && <div className="alert">{syncMsg}</div>}
       {error && <div className="alert error">{error}</div>}
       {loading && !opportunities && <p className="muted">Loading…</p>}
-      {opportunities?.length === 0 && <p className="muted">No opportunities.</p>}
+      {opportunities && shown.length === 0 && (
+        <p className="muted">
+          {filter === "special" ? "No Special opportunities yet. Use + New opportunity to make one." : "No opportunities."}
+        </p>
+      )}
 
       <ul className="events">
-        {opportunities?.map((o) => (
+        {shown.map((o) => (
           <OpportunityRow
             key={o.id}
             opp={o}
@@ -62,6 +95,19 @@ export default function Opportunities() {
           />
         ))}
       </ul>
+
+      {creating && (
+        <OpportunityForm
+          onClose={() => setCreating(false)}
+          onSaved={(o) => {
+            setCreating(false);
+            setOpenId(o.id);
+            // A past date would be hidden unless past opportunities are shown.
+            if (new Date(o.end_at) < new Date()) setIncludePast(true);
+            reload();
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -79,6 +125,22 @@ function OpportunityRow({
 }) {
   const navigate = useNavigate();
   const [channels, setChannels] = useState<Channel[]>([]);
+  const [editing, setEditing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const special = isSpecial(opp);
+  const remove = async () => {
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await api.deleteOpportunity(opp.id);
+      onChanged();
+    } catch (e) {
+      setDeleteError((e as Error).message);
+      setDeleting(false);
+    }
+  };
   const send = () =>
     navigate(composePath(channels), { state: { audience: "event", opportunityId: opp.id, channels } satisfies ComposePreset });
 
@@ -90,7 +152,12 @@ function OpportunityRow({
           <span className="muted small">{fmtTime(opp.start_at)}</span>
         </div>
         <div className="grow">
-          <strong>{opp.title}</strong>
+          <strong>{opp.title}</strong>{" "}
+          {special && (
+            <span className="badge special" title="Made on this admin site, not imported from the volunteerkc.com calendar">
+              Special
+            </span>
+          )}
           <div className="muted small">{[opp.location_name, opp.city].filter(Boolean).join(" · ")}</div>
         </div>
         <span className="badge">{plural(opp.signup_count, "signup")}</span>
@@ -103,6 +170,46 @@ function OpportunityRow({
       </button>
       {open && (
         <div className="event-body">
+          <div className="row between wrap source-line">
+            <span className="muted small">
+              {special ? (
+                <>Special opportunity · added from this admin site. The website sync leaves it alone.</>
+              ) : (
+                <>
+                  From the{" "}
+                  {opp.source_url ? (
+                    <a href={opp.source_url} target="_blank" rel="noreferrer">volunteerkc.com calendar</a>
+                  ) : (
+                    "volunteerkc.com calendar"
+                  )}
+                  {opp.locally_modified ? " · edited here, so the sync no longer updates it" : ""}
+                </>
+              )}
+            </span>
+            {special && (
+              <span className="row">
+                {confirmDelete ? (
+                  <>
+                    <span className="small">
+                      Delete it{opp.signup_count ? ` and its ${plural(opp.signup_count, "signup")}` : ""}? Logged hours are kept.
+                    </span>
+                    <button className="small-btn danger" onClick={remove} disabled={deleting}>
+                      {deleting ? "Deleting…" : "Delete"}
+                    </button>
+                    <button className="small-btn" onClick={() => setConfirmDelete(false)} disabled={deleting}>
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button className="small-btn" onClick={() => setEditing(true)}>Edit</button>
+                    <button className="small-btn danger-outline" onClick={() => setConfirmDelete(true)}>Delete</button>
+                  </>
+                )}
+              </span>
+            )}
+          </div>
+          {deleteError && <div className="alert error">{deleteError}</div>}
           {opp.signup_count > 0 && (
             <div className="row wrap">
               <span className="muted small">Message everyone signed up:</span>
@@ -114,6 +221,16 @@ function OpportunityRow({
           )}
           <Roster opp={opp} onChanged={onChanged} />
         </div>
+      )}
+      {editing && (
+        <OpportunityForm
+          opp={opp}
+          onClose={() => setEditing(false)}
+          onSaved={() => {
+            setEditing(false);
+            onChanged();
+          }}
+        />
       )}
     </li>
   );

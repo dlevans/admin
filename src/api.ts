@@ -28,12 +28,52 @@ export interface AdminVolunteer {
   created_at: string | null;
 }
 
+/** One entry in a volunteer's hours log (check-outs, admin corrections, or hours they logged themselves). */
+export interface Participation {
+  id: string;
+  volunteer_id: string;
+  hours: number;
+  date: string; // YYYY-MM-DD
+  location: string;
+  event: string;
+  notes: string | null;
+}
+
+/** Everything stored about one volunteer (GET /api/admin/volunteers/{id}, API 2026-11-20+). */
+export interface AdminVolunteerDetail extends AdminVolunteer {
+  sex: string | null;
+  abilities: string[];
+  interests: Category[];
+  availability: (AvailabilityWindow & { id: string })[];
+  updated_at: string | null;
+  devices: { platform: string; created_at: string | null; last_seen_at: string | null }[];
+  hours: { lifetime: number; year: number; month: number; entries: number };
+  participations: Participation[];
+}
+
+export interface Category {
+  id: string;
+  name: string;
+}
+
+export interface AvailabilityWindow {
+  day: string; // e.g. "Saturday"
+  start_time: string; // free text, e.g. "9:00 AM"
+  end_time: string;
+}
+
 export type VolunteerUpdate = Partial<
   Pick<
     AdminVolunteer,
     "name" | "email" | "phone" | "address" | "city" | "state" | "zip" | "pronouns" | "birthdate" | "background_check_complete" | "role"
   >
->;
+> & {
+  // API 2026-11-20+. Lists replace what's stored.
+  sex?: string | null;
+  abilities?: string[];
+  interest_ids?: string[];
+  availability?: AvailabilityWindow[];
+};
 
 /** A volunteer opportunity: the details (what, where, when). */
 export interface Opportunity {
@@ -50,6 +90,37 @@ export interface Opportunity {
   signup_count: number; // volunteers with an event for it (signed up or walked in)
   checkin_count: number; // volunteers who have checked in
   user_modified_count?: number; // events whose volunteer corrected their own times/hours (API 2026-11-15+)
+  // "volunteerkc" = imported from the public calendar; "manual" = created here ("Special" opportunities).
+  organization?: string;
+  zip?: string;
+  categories?: Category[];
+  skills?: string[] | null;
+  family_friendly?: boolean | null;
+  contact_email?: string;
+  contact_phone?: string;
+  image_url?: string | null;
+  source_url?: string | null;
+  locally_modified?: boolean;
+}
+
+/** Create/edit body for an opportunity made on this site. */
+export interface OpportunityInput {
+  title: string;
+  organization: string;
+  description: string;
+  start_at: string;
+  end_at: string;
+  location_name: string;
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  skills: string[] | null;
+  family_friendly: boolean | null;
+  contact_email: string;
+  contact_phone: string;
+  image_url: string | null;
+  category_ids: string[];
 }
 
 /** One volunteer's event for an opportunity: signup, arrival, departure, hours. */
@@ -264,12 +335,20 @@ export const api = {
   stats: () => request<Stats>("GET", "/api/admin/stats"),
   volunteers: (q?: string) =>
     request<AdminVolunteer[]>("GET", `/api/admin/volunteers${q ? `?q=${encodeURIComponent(q)}` : ""}`),
+  volunteer: (id: string) => request<AdminVolunteerDetail>("GET", `/api/admin/volunteers/${id}`),
   updateVolunteer: (id: string, body: VolunteerUpdate) =>
     request<AdminVolunteer>("PUT", `/api/admin/volunteers/${id}`, body),
   deleteVolunteer: (id: string) => request<void>("DELETE", `/api/admin/volunteers/${id}`),
 
+  categories: () => request<Category[]>("GET", "/api/categories"),
+
   opportunities: (includePast = false) =>
     request<Opportunity[]>("GET", `/api/opportunities?include_past=${includePast}`),
+  createOpportunity: (body: OpportunityInput) => request<Opportunity>("POST", "/api/opportunities", body),
+  updateOpportunity: (id: string, body: Partial<OpportunityInput>) =>
+    request<Opportunity>("PUT", `/api/opportunities/${id}`, body),
+  /** Only works for opportunities made here; calendar ones would come back on the next sync. */
+  deleteOpportunity: (id: string) => request<void>("DELETE", `/api/opportunities/${id}`),
   opportunityEvents: (opportunityId: string) =>
     request<VolunteerEvent[]>("GET", `/api/opportunities/${opportunityId}/events`),
   /** Correct someone's arrival/departure/hours, or record a volunteer who didn't use the app. */

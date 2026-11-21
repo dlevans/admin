@@ -5,6 +5,7 @@ import { useAuth } from "../auth";
 import ChannelToggles from "../components/ChannelToggles";
 import DeleteVolunteer from "../components/DeleteVolunteer";
 import EditVolunteer from "../components/EditVolunteer";
+import ViewVolunteer from "../components/ViewVolunteer";
 import { canReach, ComposePreset, composePath, fmtPhone, personMatches, plural, useLoad } from "../util";
 
 export default function Volunteers() {
@@ -14,6 +15,7 @@ export default function Volunteers() {
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [channels, setChannels] = useState<Channel[]>([]);
+  const [viewing, setViewing] = useState<AdminVolunteer | null>(null);
   const [editing, setEditing] = useState<AdminVolunteer | null>(null);
   const [deleting, setDeleting] = useState<AdminVolunteer | null>(null);
 
@@ -96,6 +98,7 @@ export default function Volunteers() {
                   <td className="hide-sm">{v.city}{v.state && `, ${v.state}`}</td>
                   <td className="muted small">{v.device_count ? plural(v.device_count, "device") : "—"}</td>
                   <td className="row-actions" onClick={(e) => e.stopPropagation()}>
+                    <button className="small-btn" onClick={() => setViewing(v)}>View</button>
                     <button className="small-btn" onClick={() => setEditing(v)}>Edit</button>
                     <button
                       className="small-btn danger-outline"
@@ -128,6 +131,16 @@ export default function Volunteers() {
         </div>
       )}
 
+      {viewing && (
+        <ViewVolunteer
+          volunteer={viewing}
+          onClose={() => setViewing(null)}
+          onEdit={() => {
+            setEditing(viewing);
+            setViewing(null);
+          }}
+        />
+      )}
       {editing && <EditVolunteer volunteer={editing} isSelf={editing.id === user?.id} onClose={() => setEditing(null)} onSaved={saved} />}
       {deleting && <DeleteVolunteer volunteer={deleting} onClose={() => setDeleting(null)} onDeleted={deleted} />}
     </div>
