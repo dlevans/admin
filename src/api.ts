@@ -99,6 +99,7 @@ export interface Opportunity {
   contact_email?: string;
   contact_phone?: string;
   image_url?: string | null;
+  event_link?: string | null; // optional link set by admins (sign-up form, details page...); API 2026-11-21+
   source_url?: string | null;
   locally_modified?: boolean;
 }
@@ -120,6 +121,7 @@ export interface OpportunityInput {
   contact_email: string;
   contact_phone: string;
   image_url: string | null;
+  event_link: string | null;
   category_ids: string[];
 }
 

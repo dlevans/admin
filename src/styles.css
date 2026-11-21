@@ -398,3 +398,4 @@ button.danger-outline:hover:not(:disabled) { border-color: var(--err); }
 .badge.special { background: var(--charcoal); color: var(--on-charcoal); }
 .source-filter { margin: .5rem 0 1rem; display: inline-flex; flex-wrap: wrap; }
 .source-line { margin-bottom: .75rem; }
+.event-link { margin: 0 0 .75rem; overflow-wrap: anywhere; }

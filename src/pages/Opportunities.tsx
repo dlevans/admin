@@ -209,6 +209,12 @@ function OpportunityRow({
               </span>
             )}
           </div>
+          {opp.event_link && (
+            <p className="small event-link">
+              <span className="muted">Event link:</span>{" "}
+              <a href={opp.event_link} target="_blank" rel="noreferrer">{opp.event_link}</a>
+            </p>
+          )}
           {deleteError && <div className="alert error">{deleteError}</div>}
           {opp.signup_count > 0 && (
             <div className="row wrap">

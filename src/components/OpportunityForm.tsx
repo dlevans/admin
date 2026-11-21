@@ -36,6 +36,7 @@ export default function OpportunityForm({ opp, onClose, onSaved }: Props) {
     contact_email: opp?.contact_email ?? "",
     contact_phone: opp?.contact_phone ?? "",
     image_url: opp?.image_url ?? "",
+    event_link: opp?.event_link ?? "",
   });
   const [categoryIds, setCategoryIds] = useState<Set<string>>(new Set((opp?.categories ?? []).map((c) => c.id)));
   const [saving, setSaving] = useState(false);
@@ -78,6 +79,7 @@ export default function OpportunityForm({ opp, onClose, onSaved }: Props) {
       contact_email: f.contact_email.trim(),
       contact_phone: f.contact_phone.trim(),
       image_url: f.image_url.trim() || null,
+      event_link: f.event_link.trim() || null,
       category_ids: [...categoryIds],
     };
     try {
@@ -117,6 +119,11 @@ export default function OpportunityForm({ opp, onClose, onSaved }: Props) {
           <label>Contact phone<input type="tel" {...text("contact_phone")} maxLength={30} /></label>
           <label>Image URL<input type="url" {...text("image_url")} maxLength={1000} placeholder="https://…" /></label>
         </div>
+        <label>
+          Event link
+          <input type="url" {...text("event_link")} maxLength={1000} placeholder="https://… (sign-up form, details page, video call…)" />
+          <span className="muted small" style={{ fontWeight: 400 }}>Optional. Shown with the opportunity.</span>
+        </label>
         <label>
           Skills
           <input {...text("skills")} placeholder="e.g. lifting, Spanish" />
